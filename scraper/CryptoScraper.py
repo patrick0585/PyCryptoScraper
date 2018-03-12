@@ -20,7 +20,7 @@ class CryptoScraper(CryptScraperBase):
                                     format:  [{ name => "bitcoin", tags => ["usd", "eur"] }, ...]
         :type currencies_to_scrape: list
         """
-        self.base_url = 'https://www.coingecko.com/de/kurs_chart/'
+        self.base_url = 'https://www.coingecko.com/en/price_charts/'
 
         valid_currencies, errors = DataSchema(many=True).load(currencies_to_scrape)
         if not errors:
@@ -92,7 +92,7 @@ class CryptoScraper(CryptScraperBase):
         return response.status_code, response.content
 
     def clean_currency_amount(self, data):
-        m = re.search(r'^\s+(.*\d+)\s+.*', data)
+        m = re.search(r'^\S([,\d]+)', data)
         if m:
             return m.group(1)
 
@@ -118,10 +118,12 @@ class CryptoScraper(CryptScraperBase):
         crypt_currency = dict()
 
         for key, value in opts.iteritems():
-            info = tree.xpath('//div[@class="col-xs-12"]/div/table[@class="table"]/tbody/tr/td[' + value + ']/text()')[0]
+            path = '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td['+value+']/'
             if value in('3', '4', '5'):
+                info = tree.xpath(path+'span/text()')[0]
                 crypt_currency[key] = self.clean_currency_amount(info)
             else:
+                info = tree.xpath(path+'text()')[0]
                 crypt_currency[key] = info
 
         # append actual timestamp
@@ -129,5 +131,4 @@ class CryptoScraper(CryptScraperBase):
 
         # append the exchange_rate
         crypt_currency['exchange_rate'] = exchange_rate.upper()
-
         return crypt_currency
