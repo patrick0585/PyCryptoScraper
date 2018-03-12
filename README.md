@@ -21,7 +21,7 @@ To run PyCryptScraper you need to instantiate the class **CryptoScraper**.
     
 or you can execute the python script **Scraper.py** with certain parameters
 
-    python Scrape.py -c "[{'name':'bitcoin','tags':['usd','eur']}]"
+    python Scraper.py -c "[{'name':'bitcoin','tags':['usd','eur']}]"
 
 ## Run Tests
 
