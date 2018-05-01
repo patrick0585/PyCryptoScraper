@@ -1,10 +1,10 @@
+#!/usr/bin/python
 # coding: utf-8
 from __future__ import absolute_import, unicode_literals
 
 from scraper.CryptoScraper import CryptoScraper
 from schema.DataSchema import DataSchema
 import optparse
-import sys
 import ast
 import json
 
@@ -29,12 +29,7 @@ if __name__ == "__main__":
     output = options.output
 
     # validate currency data
-    valid_currencies, errors = DataSchema(many=True).load(currencies_to_scrape)
-
-    if errors:
-        print 'error validating data'
-        print "data-format:  [{'name':'bitcoin','tags':['usd','eur']}]"
-        sys.exit(0)
+    valid_currencies = DataSchema(many=True).load(currencies_to_scrape)
 
     # scraping the currencies
     scrape()

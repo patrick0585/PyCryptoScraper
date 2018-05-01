@@ -22,12 +22,8 @@ class CryptoScraper(CryptScraperBase):
         """
         self.base_url = 'https://www.coingecko.com/en/price_charts/'
 
-        valid_currencies, errors = DataSchema(many=True).load(currencies_to_scrape)
-        if not errors:
-            self.currencies_to_scrape = valid_currencies
-        else:
-            # TODO: Throw in error if the currencies are not valid
-            pass
+        valid_currencies = DataSchema(many=True).load(currencies_to_scrape)
+        self.currencies_to_scrape = valid_currencies
 
     def _extract(self, name, tag, *args, **kwargs):
         """

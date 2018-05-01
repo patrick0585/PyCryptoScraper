@@ -5,6 +5,10 @@ from the page [CoinGecko](https://www.coingecko.com).
 
 ## Dependencies
 
+* [python-lxml](lxml.de)
+
+apt-get -y install python-lxml
+
 * [marshmallow](https://marshmallow.readthedocs.io/en/latest/)
 
 marshmallow is an ORM/ODM/framework-agnostic library for converting complex datatypes, such as objects, to and from native Python datatypes.
