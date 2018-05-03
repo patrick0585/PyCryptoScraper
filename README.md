@@ -31,7 +31,7 @@ or you can execute the python script **Scraper.py** with certain parameters
     python Scraper.py -c "[{'name':'bitcoin','tags':['usd','eur']}]"
 
 or you can list all currencies from CoinGecko by running **Scraper.py** with no parameters.
-As of 2018-05-02 this was 1735 currencies and takes about 45 minutes to complete.
+As of 2018-05-02 this was 1735 currencies and takes about 20 minutes to complete.
 
     python Scraper.py
 
