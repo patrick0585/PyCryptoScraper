@@ -20,14 +20,11 @@ class CryptoScraper(CryptScraperBase):
                                     format:  [{ name => "bitcoin", tags => ["usd", "eur"] }, ...]
         :type currencies_to_scrape: list
         """
-        self.base_url = 'https://www.coingecko.com/en/price_charts/'
+        self.base_url = 'https://www.coingecko.com/en/'
+        self.price_charts_url = self.base_url+'price_charts/'
 
-        valid_currencies, errors = DataSchema(many=True).load(currencies_to_scrape)
-        if not errors:
-            self.currencies_to_scrape = valid_currencies
-        else:
-            # TODO: Throw in error if the currencies are not valid
-            pass
+        valid_currencies = DataSchema(many=True).load(currencies_to_scrape)
+        self.currencies_to_scrape = valid_currencies
 
     def _extract(self, name, tag, *args, **kwargs):
         """
@@ -41,23 +38,20 @@ class CryptoScraper(CryptScraperBase):
         :param kwargs:
         :return:
         """
-        status_code, content = self.get_page_content(name, tag)
-        if status_code == 200:
-            return content
-        else:
-            raise ('page is not available')
+        content = self.get_page_content(name, tag)
+        return content
 
-    def _transform(self, page_content, exchange_rate, *args, **kwargs):
+    def _transform(self, page_content, exchange_symbol, *args, **kwargs):
         """
-            Transforms the extraced data into an given format
+            Transforms the extracted data into an given format
 
-        :param page_content: extraced page content in html
+        :param page_content: extracted page content in html
         :type page_content: str
         :param args:
         :param kwargs:
         :return: Transformed CryptCurrency Details
         """
-        return self._get_currency_details(page_content, exchange_rate)
+        return self._get_currency_details(page_content, exchange_symbol)
 
     def scrape(self):
         """
@@ -73,7 +67,7 @@ class CryptoScraper(CryptScraperBase):
 
             for tag in tags:
                 page_content = self._extract(name=name, tag=tag)
-                crypt_currency = self._transform(page_content=page_content, exchange_rate=tag)
+                crypt_currency = self._transform(page_content=page_content, exchange_symbol=tag)
                 results.append(crypt_currency)
 
         return results
@@ -88,47 +82,53 @@ class CryptoScraper(CryptScraperBase):
         :type tag: str
         :return: The page content and statuscode
         """
-        response = requests.get(self.base_url+name+'/'+tag)
-        return response.status_code, response.content
+        response = requests.get(self.price_charts_url+name+'/'+tag)
+        response.raise_for_status()
+        return response.content
 
-    def clean_currency_amount(self, data):
-        m = re.search(r'^\S([,\d]+)', data)
-        if m:
-            return m.group(1)
-
-    def _get_currency_details(self, page_content, exchange_rate):
+    def _get_currency_details(self, page_content, price_symbol):
         """
-            Get all details for an crypt-currency
+            Get all details for a crypto-currency
 
-        :param page_content: The html page content with crypt-currency information
+        :param page_content: The html page content with crypto-currency information
         :type page_content: str
-        :return: extracted details for an given crypt-currency
+        :return: extracted details for an given crypto-currency
         """
         tree = html.fromstring(page_content)
-
+    
         # Options for xpath
+        limb = tree.xpath('//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr')[0]
         opts = {
-            'currency': '1',
-            'code': '2',
-            'exchange_rate': '3',
-            'market_capitalisation': '4',
-            'trading_volume': '5'
+            'currency':   'td[1]/text()',
+            'symbol':     'td[2]/text()',
+            'price':      'td[3]/span/text()',
+            'market_cap': 'td[4]/span/text()',
+            'volume':     'td[5]/span/text()'
         }
 
         crypt_currency = dict()
 
-        for key, value in opts.iteritems():
-            path = '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td['+value+']/'
-            if value in('3', '4', '5'):
-                info = tree.xpath(path+'span/text()')[0]
-                crypt_currency[key] = self.clean_currency_amount(info)
+        for key, path in opts.iteritems():
+            if key is 'currency':
+                info = limb.xpath(path)[1]
+                crypt_currency[key] = str(info).replace("\n",'')
+            elif key in('price', 'market_cap', 'volume'):
+                info = limb.xpath(path)[0]
+                crypt_currency[key] = clean_currency_amount(info)
             else:
-                info = tree.xpath(path+'text()')[0]
+                info = limb.xpath(path)[0]
                 crypt_currency[key] = info
 
-        # append actual timestamp
+        # append current timestamp
         crypt_currency['date'] = int(time.time())
 
-        # append the exchange_rate
-        crypt_currency['exchange_rate'] = exchange_rate.upper()
+        # append the exchange_symbol
+        crypt_currency['price_symbol'] = price_symbol.upper()
         return crypt_currency
+
+def clean_currency_amount(data):
+    m = re.search(r'^\S([,\d.]+)', data)
+    if m:
+        return m.group(1).replace(',','')
+    else:
+        return data
