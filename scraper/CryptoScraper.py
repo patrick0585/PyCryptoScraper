@@ -20,7 +20,8 @@ class CryptoScraper(CryptScraperBase):
                                     format:  [{ name => "bitcoin", tags => ["usd", "eur"] }, ...]
         :type currencies_to_scrape: list
         """
-        self.base_url = 'https://www.coingecko.com/en/price_charts/'
+        self.base_url = 'https://www.coingecko.com/en/'
+        self.price_charts_url = self.base_url+'price_charts/'
 
         valid_currencies = DataSchema(many=True).load(currencies_to_scrape)
         self.currencies_to_scrape = valid_currencies
@@ -37,11 +38,8 @@ class CryptoScraper(CryptScraperBase):
         :param kwargs:
         :return:
         """
-        status_code, content = self.get_page_content(name, tag)
-        if status_code == 200:
-            return content
-        else:
-            raise ('page is not available')
+        content = self.get_page_content(name, tag)
+        return content
 
     def _transform(self, page_content, exchange_symbol, *args, **kwargs):
         """
@@ -84,10 +82,11 @@ class CryptoScraper(CryptScraperBase):
         :type tag: str
         :return: The page content and statuscode
         """
-        response = requests.get(self.base_url+name+'/'+tag)
-        return response.status_code, response.content
+        response = requests.get(self.price_charts_url+name+'/'+tag)
+        response.raise_for_status()
+        return response.content
 
-    def _get_currency_details(self, page_content, exchange_symbol):
+    def _get_currency_details(self, page_content, price_symbol):
         """
             Get all details for a crypto-currency
 
@@ -98,32 +97,33 @@ class CryptoScraper(CryptScraperBase):
         tree = html.fromstring(page_content)
     
         # Options for xpath
+        limb = tree.xpath('//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr')[0]
         opts = {
-            'currency': '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td[1]/',
-            'symbol': '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td[2]/',
-            'exchange_rate': '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td[3]/',
-            'market_cap': '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td[4]/',
-            'volume': '//div[@class="card-footer bg-transparent"]/div[@class="table-responsive"]/table[@class="table mt-2"]/tbody/tr/td[5]/'
+            'currency':   'td[1]/text()',
+            'symbol':     'td[2]/text()',
+            'price':      'td[3]/span/text()',
+            'market_cap': 'td[4]/span/text()',
+            'volume':     'td[5]/span/text()'
         }
 
         crypt_currency = dict()
 
         for key, path in opts.iteritems():
             if key is 'currency':
-                info = tree.xpath(path+'text()')[1]
+                info = limb.xpath(path)[1]
                 crypt_currency[key] = str(info).replace("\n",'')
-            elif key in('exchange_rate', 'market_cap', 'volume'):
-                info = tree.xpath(path+'span/text()')[0]
+            elif key in('price', 'market_cap', 'volume'):
+                info = limb.xpath(path)[0]
                 crypt_currency[key] = clean_currency_amount(info)
             else:
-                info = tree.xpath(path+'text()')[0]
+                info = limb.xpath(path)[0]
                 crypt_currency[key] = info
 
         # append current timestamp
         crypt_currency['date'] = int(time.time())
 
         # append the exchange_symbol
-        crypt_currency['exchange_symbol'] = exchange_symbol.upper()
+        crypt_currency['price_symbol'] = price_symbol.upper()
         return crypt_currency
 
 def clean_currency_amount(data):
@@ -132,4 +132,3 @@ def clean_currency_amount(data):
         return m.group(1).replace(',','')
     else:
         return data
-

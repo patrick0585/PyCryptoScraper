@@ -3,11 +3,14 @@
 PyCryptoScraper is an script to scrape detailed crypto-currency informations 
 from the page [CoinGecko](https://www.coingecko.com).
 
+This version was forked from [patrick0585/PyCryptoScraper](https://github.com/patrick0585/PyCryptoScraper) 
+on 2018-05-01. We fixed a couple of issues with parsing of CoinGecko results. We might add some other features later on.
+
 ## Dependencies
 
-* [python-lxml](lxml.de)
+* [python-lxml](http://lxml.de)
 
-apt-get -y install python-lxml
+    apt-get -y install python-lxml
 
 * [marshmallow](https://marshmallow.readthedocs.io/en/latest/)
 
@@ -27,6 +30,12 @@ or you can execute the python script **Scraper.py** with certain parameters
 
     python Scraper.py -c "[{'name':'bitcoin','tags':['usd','eur']}]"
 
+or you can list all currencies from CoinGecko by running **Scraper.py** with no parameters.
+As of 2018-05-02 this was 1735 currencies and takes about 45 minutes to complete.
+
+    python Scraper.py
+
+
 ## Run Tests
 
 Test can be executed by the following command-line command:
@@ -37,6 +46,7 @@ Test can be executed by the following command-line command:
 ## Authors
 
 * **Patrick Kowalik** - *Initial work* - [Crypto-Scraper](https://github.com/patrick0585/PyCryptoScraper)
+* **Glenn Wood** - *Debugging and usability improvements* - [PyCrypto-Scraper](https://github.com/GlennWood/PyCryptoScraper)
 
 
 
